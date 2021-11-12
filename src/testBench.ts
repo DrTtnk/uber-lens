@@ -1,5 +1,5 @@
 import * as UL from "./index";
-import * as R from "ramda";
+import * as R from "rambda";
 
 export type Translation<T> = { isoCode: string; value: T };
 
@@ -194,7 +194,7 @@ type SimpleObject = typeof simpleObject;
 
 const simpleObjectSet = UL.uber<SimpleObject>()(
     "d",
-    UL.matchMany({ e: R.gt(R.__, 50), f: '8' }),
+    UL.matchMany({ e: (e: number) => e > 50, f: '8' }),
     "f"
 ).mod(n => `Greater ${n}`)(simpleObject);
 

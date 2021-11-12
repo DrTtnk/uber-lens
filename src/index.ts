@@ -1,5 +1,5 @@
 import {A, L, O, U} from "ts-toolbelt/out"
-import * as R from "ramda";
+import * as R from "rambda";
 
 const assertNever = (x: never): never => { throw new Error(`Unexpected object: ${x}`); };
 
@@ -8,15 +8,11 @@ type MatchAny<T> = { any: (x: T) => boolean };
 type MatchAll<T> = { all: (x: T) => boolean };
 type Index<T> = (x: T) => number;
 
-const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number => {
-    const values = arr.map(extract);
-    return values.indexOf(Math.max(...values));
-};
+const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
+    R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
-const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number => {
-    const values = arr.map(extract);
-    return values.indexOf(Math.min(...values));
-};
+const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
+    R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
 export type PartialMatch<T> = {
     [P in keyof T]?: T[P] extends L.List<infer U> ? Match<U>
@@ -25,14 +21,10 @@ export type PartialMatch<T> = {
 };
 
 const comparePartial = <T>(matcher: PartialMatch<T>) => <S extends T>(obj: S): boolean => {
-    if (typeof matcher === "function")
-        // @ts-ignore
-        return matcher(obj);
-
-    if(typeof matcher === "object")
-        return R.keys(matcher).every(key => comparePartial(matcher[key] as any)(obj[key]));
-
-    return matcher === obj;
+    // @ts-ignore
+    return typeof matcher === "function" ? matcher(obj)
+         : typeof matcher === "object"   ? R.keys(matcher).every(key => comparePartial(matcher[key] as any)(obj[key]))
+         : matcher === obj;
 };
 
 export const matchOne = <T>(match: PartialMatch<T>) => ({ single: comparePartial<T>(match) })
@@ -50,14 +42,14 @@ export const minByProp = <K extends string, T extends Record<K, number>>(prop: K
 
 type __P = { __placeholder__: never };
 
-export type Matcher<Obj, El>
+export type Matcher<El>
     = { single: Match<El> }
     | { multi: Match<El> }
-    | { fold: Index<Obj> }
+    | { fold: Index<El[]> }
 
-type Indexer<Obj> = A.Keys<Obj> | (Obj extends L.List<infer El> ? Matcher<Obj, El> : never)
+type Indexer<Obj> = A.Keys<Obj> | (Obj extends L.List<infer El> ? Matcher<El> : never)
 
-type IndexersToPath<IndexerPath extends L.List> = L.Replace<IndexerPath, Matcher<any, any>, number, 'extends->'>
+type IndexersToPath<IndexerPath extends L.List> = L.Replace<IndexerPath, Matcher<any>, number, 'extends->'>
 
 type MakeIndexer<Obj, Path extends L.List> = __P | Indexer<O.Path<Obj, L.Exclude<IndexersToPath<Path>, [__P], 'extends->'>>>
 

@@ -10,11 +10,12 @@ Have you ever wanted to do it in a way that is easy to use?
 
 Look no further, UBER LENS is here to help you.
 
-### What is UBER LENS?
+## What is UBER LENS?
 
 It's a library that allows you to create declarative and strongly typed lenses for your data.
 
-### The old way
+## The old way
+
 This is a very basic nested data structure
 ```typescript
 const store = {
@@ -67,13 +68,16 @@ import * as UL from 'uber-lens'
 type Store = typeof store
 
 const uberLens = UL.uber<Store>()('posts', 0, 'comments', UL.matchOne({name: 'Über'}), 'text');
-```
----
-See? It's that easy!
-```typescript
+
 // Now we just have to update the store
 const newStore = uberLens.mod(store, t => t.toUpperCase())
+```
 
+See? It's that easy!
+
+---
+
+```typescript
 // But we can also just get the value
 const uberComment = uberLens.get(store)
 
@@ -83,12 +87,16 @@ const newStore2 = uberLens.set(store, 'Über is the best')
 
 I'll let you guess if this works as expected, but the tests and the EXTREMELY STRONG TYPE system are here to make sure 
 you don't mess up.
+
 ---
-### But wait! There is more!
+
+## But wait! There is more!
 
 Not only UBER LENS can make your life easier when making simple updates, it can also make your life easier when making
 complex updates.
+
 ---
+
 Do you want to set/update/get **all** Über comments to be all uppercase? You can do that with UBER LENS!
 ```typescript
 import * as UL from 'uber-lens'
@@ -110,7 +118,7 @@ const mostLikedCommetsLens = UL.uber<Store>()(
     'posts', 
     UL.matchAll, 
     'comments', 
-    UL.matchMany({ likes: UL.gt(10) }), 
+    UL.matchMany({ likes: l => l > 10) }), // <- and the intellisense is here to help you
     'text'
 );
 ```
@@ -147,7 +155,9 @@ const titleLens = UL.uber<Store>()('posts', 0, 'title').mod(store, t => t + 1); 
 // If you use the wrong path, you'll get a compile error.
 const uberLens2 = UL.uber<Store>()('posts', 0, 'titles'); // Error!
 ```
+
 ---
+
 # Api
 
 ### uber
@@ -160,6 +170,8 @@ export function uber<Obj extends object>(): <P extends Indexer<Obj>[]>(...indexe
 }
 ```
 
+---
+
 ### matchOne, matchMany, matchAll
 ```typescript
 export function matchOne: <T>(match: PartialMatch<T>) => { single: <S extends T>(obj: S) => boolean };
@@ -167,12 +179,14 @@ export function matchMany: <T>(match: PartialMatch<T>) => { multi: <S extends T>
 export function matchAll: () => { multi: <T>(_: T) => boolean };
 ```
 
+---
+
 ### maxBy, minBy, maxByProp, minByProp
 ```typescript
 
-export function maxBy: <T>(extract: (el: T) => number) => { fold: <T>(arr: T[]) => number };
-export function minBy: <T>(extract: (el: T) => number) => { fold: <T>(arr: T[]) => number };
+export function maxBy: <T>(extract: (el: T) => number) => { fold: Index<T[]> };
+export function minBy: <T>(extract: (el: T) => number) => { fold: Index<T[]> };
 
-export function maxByProp: <K extends string, T extends Record<K, number>>(prop: K) => { fold: <T>(arr: T[]) => number };
-export function minByProp: <K extends string, T extends Record<K, number>>(prop: K) => { fold: <T>(arr: T[]) => number };
+export function maxByProp: <K extends string, T extends Record<K, number>>(prop: K) => { fold: Index<T[]> };
+export function minByProp: <K extends string, T extends Record<K, number>>(prop: K) => { fold: Index<T[]> };
 ```
