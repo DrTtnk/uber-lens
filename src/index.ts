@@ -1,6 +1,7 @@
-import {A, L, O, U} from "ts-toolbelt/out"
+import {A, L, O, U, M} from "ts-toolbelt/out"
 import * as R from "rambda";
 
+// istanbul ignore next
 const assertNever = (x: never): never => { throw new Error(`Unexpected object: ${x}`); };
 
 type Match<T> = (x: T) => boolean;
@@ -92,24 +93,24 @@ const foldIndex = <El>(__obj: any[], p: { fold: any; init?: any }) =>
 const getterRecursive =
     <T, Value>(...indexers: (undefined | Indexer<any>)[]) =>
     (obj: T): Value => {
-    const __get = (__obj: any, [p, ...rest]: (undefined | Indexer<any>)[]): any => {
+    const __get = ([p, ...rest]: (Indexer<any> | undefined)[], __obj: any): any => {
         if(p === undefined || __obj === undefined)
             return __obj;
         if(typeof p === "string" || typeof p === "number" || typeof p === "symbol")
-            return __get(__obj[p], rest);
+            return __get(rest, __obj[p]);
         if('single' in p)
-            return __get(__obj.find(p.single), rest);
+            return __get(rest, __obj.find(p.single));
         if('multi' in p)
-            return __obj.filter(p.multi).map((e: any) => __get(e, rest));
+            return __obj.filter(p.multi).map((e: any) => __get(rest, e));
         if('fold' in p)
-            return __get(__obj[p.fold(__obj)], rest);
+            return __get(rest, __obj[p.fold(__obj)]);
         if('foldMany' in p)
-            return __get(__obj[foldIndex(__obj, p)], rest);
+            return __get(rest, __obj[foldIndex(__obj, p)]);
 
         return assertNever(p);
     };
 
-    return __get(obj, indexers);
+    return __get(indexers, obj);
 };
 
 const setterRecursive =
@@ -121,28 +122,25 @@ const modderRecursive =
     <T, Value>(...indexers: (undefined | Indexer<any>)[]) =>
     (fn: (input: Value) => Value) =>
     (obj: T): T => {
-        const __mod = (__obj: any, [p, ...rest]: (undefined | Indexer<any>)[]): any => {
-            if(p === undefined) {
-                return fn(__obj);
-            }
-            if(typeof p === "string" || typeof p === "symbol") {
-                return R.assoc(p as string, __mod(__obj[p], rest), __obj);
-            }
-            if(typeof p === "number") {
-                return __obj[p] ? R.update(p, __mod(__obj[p], rest), __obj) : __obj;
-            }
+        const __mod = ([p, ...rest]: (Indexer<any> | undefined)[]) => (__obj: any): any => {
+            if(p === undefined) return fn(__obj);
+
+            const mod = __mod(rest);
+            if(typeof p === "string" || typeof p === "symbol")
+                return R.assoc(p as string, mod(__obj[p]), __obj);
+            if(typeof p === "number")
+                return __obj[p] ? R.update(p, mod(__obj[p]), __obj) : __obj;
             if('single' in p){
                 const index = __obj.findIndex(p.single);
-                return index != -1 ? R.update(index, __mod(__obj[index], rest), __obj) : __obj;
+                return index != -1 ? R.update(index, __mod(__obj[index]), __obj) : __obj;
             }
-            if('multi' in p) {
-                return __obj.map((el: any) => p.multi(el) ? __mod(el, rest) : el);
-            }
-            if('fold' in p) {
-                return __mod(__obj[p.fold(__obj)], rest);
-            }
+            if('multi' in p)
+                return __obj.map((el: any) => p.multi(el) ? mod(el) : el);
+            if('fold' in p)
+                return mod(__obj[p.fold(__obj)]);
+
             return assertNever(p);
         };
 
-        return __mod(obj, indexers);
+        return __mod(indexers)(obj);
 };
