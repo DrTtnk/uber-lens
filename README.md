@@ -118,7 +118,7 @@ const mostLikedCommetsLens = UL.uber<Store>()(
     'posts', 
     UL.matchAll, 
     'comments', 
-    UL.matchMany({ likes: l => l > 10) }), // <- and the intellisense is here to help you
+    UL.indexMany({ likes: l => l > 10) }), // <- and the intellisense is here to help you
     'text'
 );
 ```
@@ -137,7 +137,7 @@ const mostCommentsLens = UL.uber<Store>()(
 
 This is the sweetest part, everything is typed! And I mean everything is **strongly** typed.
 
-If you mess up and you use the wrong type, you'll get a compile time error.
+If you mess up, and you use the wrong type, you'll get a compile-time error.
 
 The wrong path? Compile time error.
 

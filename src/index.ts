@@ -30,23 +30,16 @@ type ComparerToObject<T>
     : T;
 
 export const comparePartial = <T extends Comparer<any>>(matcher: T) => <S extends ComparerToObject<T>>(obj: S): boolean => {
-    // Case: matcher is a primitive
-    // @ts-ignore
     if(["string", "number", "boolean"].includes(typeof matcher)) return obj === matcher;
 
-    // Case: matcher is a symbol
     if (typeof matcher === "symbol" && typeof obj === "symbol") return obj.toString() === matcher.toString();
 
-    // Case: matcher is a Date
     if (matcher instanceof Date) return obj instanceof Date && obj.getTime() === matcher.getTime();
 
-    // Case: matcher is a function
-    // @ts-ignore
     if (typeof matcher === 'function') return matcher(obj);
 
     if (Array.isArray(matcher) && Array.isArray(obj)) return R.equals(matcher as any[], obj);
 
-    // Case: matcher is an object
     if (typeof matcher === 'object'){
         if((matcher as any)[$all] && Array.isArray(obj))
             return obj.every(comparePartial((matcher as any)[$all]));
@@ -134,24 +127,25 @@ const foldIndex = <El>(__obj: any[], p: { fold: any; init?: any }) =>
 const getterRecursive =
     <T, Value>(...indexers: (undefined | Indexer<any>)[]) =>
     (obj: T): Value => {
-    const __get = ([p, ...rest]: (Indexer<any> | undefined)[], __obj: any): any => {
+    const __get = ([p, ...rest]: (Indexer<any> | undefined)[]) => (__obj: any): any => {
         if(p === undefined || __obj === undefined)
             return __obj;
+
+        const get = __get(rest);
+
         if(typeof p === "string" || typeof p === "number" || typeof p === "symbol")
-            return __get(rest, __obj[p]);
+            return get(__obj[p]);
         if('single' in p)
-            return __get(rest, __obj.find(p.single));
+            return get(__obj.find(p.single));
         if('multi' in p)
-            return __obj.filter(p.multi).map((e: any) => __get(rest, e));
+            return __obj.filter(p.multi).map(get);
         if('fold' in p)
-            return __get(rest, __obj[p.fold(__obj)]);
-        if('foldMany' in p)
-            return __get(rest, __obj[foldIndex(__obj, p)]);
+            return get(__obj[p.fold(__obj)]);
 
         return assertNever(p);
     };
 
-    return __get(indexers, obj);
+    return __get(indexers)(obj);
 };
 
 const setterRecursive =
@@ -164,21 +158,21 @@ const modderRecursive =
     (fn: (input: Value) => Value) =>
     (obj: T): T => {
         const __mod = ([p, ...rest]: (Indexer<any> | undefined)[]) => (__obj: any): any => {
-            if(p === undefined) return fn(__obj);
+            if(p === undefined)
+                return fn(__obj);
 
             const mod = __mod(rest);
+
             if(typeof p === "string" || typeof p === "symbol")
                 return R.assoc(p as string, mod(__obj[p]), __obj);
             if(typeof p === "number")
                 return __obj[p] ? R.update(p, mod(__obj[p]), __obj) : __obj;
-            if('single' in p){
-                const index = __obj.findIndex(p.single);
-                return index != -1 ? R.update(index, __mod(__obj[index]), __obj) : __obj;
-            }
+            if('single' in p)
+                return R.pipe(R.findIndex(p.single), R.unless(R.equals(-1), idx => R.update(idx, mod(__obj[idx]), __obj)))(__obj);
             if('multi' in p)
                 return __obj.map((el: any) => p.multi(el) ? mod(el) : el);
             if('fold' in p)
-                return mod(__obj[p.fold(__obj)]);
+                return R.update(p.fold(__obj), mod(__obj[p.fold(__obj)]), __obj);
 
             return assertNever(p);
         };

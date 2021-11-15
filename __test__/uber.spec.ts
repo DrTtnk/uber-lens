@@ -169,12 +169,18 @@ describe('Uber lens', () => {
             expect(newObj2).toEqual({a: {b: {c: ['hello!']}}});
         });
 
-        it('Returns undefined if the path doesn\'t exists in the nested array', () => {
+        it('Returns undefined if the path doesn\'t exists in the nested array, the set/mod are skipped', () => {
             const obj = {a: {b: {c: ['hello']}}};
             type Obj = typeof obj;
 
             const lens = UL.uber<Obj>()('a', 'b', 'c', 1);
             expect(lens.get(obj)).toBeUndefined();
+
+            const newObj = lens.set(obj)('world');
+            expect(newObj).toEqual(obj);
+
+            const newObj2 = lens.mod(x => x + '!')(obj);
+            expect(newObj2).toEqual(obj);
         });
 
         it('Fails the compilation if the path is not valid' , () => {
@@ -187,7 +193,7 @@ describe('Uber lens', () => {
         });
 
         it('matches a single elements in the path with nested arrays using the matchOne utils', () => {
-            const obj = {a: {b: {c: ['hello']}}};
+            const obj = {a: {b: {c: ['hello', 'hello', 'world']}}};
             type Obj = typeof obj;
 
             // @ts-expect-error
@@ -196,6 +202,9 @@ describe('Uber lens', () => {
             const lensInvalid2 = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne(2));
             const lens = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne('hello'));
             expect(lens.get(obj)).toBe('hello');
+
+            const newObj = lens.set(obj)('world');
+            expect(newObj).toEqual({a: {b: {c: ['world', 'hello', 'world']}}});
         });
 
         it('Matches a single object in the path with nested arrays using the matchOne utils', () => {
@@ -206,6 +215,9 @@ describe('Uber lens', () => {
             const lensInvalid = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne({c: 'hello'}));
             const lens = UL.uber<Obj>()('a', 'b', UL.indexOne({c: 'hello'}));
             expect(lens.get(obj)).toEqual({c: 'hello'});
+
+            const newObj = lens.set(obj)({c: 'world'});
+            expect(newObj).toEqual({a: {b: [{c: 'world'}]}});
         });
 
         it('Matches multiple elements in the path with nested arrays using the matchMany utils', () => {
@@ -249,22 +261,30 @@ describe('Uber lens', () => {
             const lensMin = UL.uber<Obj>()('a', 'b', UL.maxBy((o: {c: number}) => Math.abs(o.c)));
             expect(lensMin.get(obj)).toEqual({c: -200});
 
+            const newObj = lensMin.set(obj)({c: -1000});
+            expect(newObj).toEqual({a: {b: [{c: 0}, {c: 100}, {c: -1000}]}});
+
             const lensMax = UL.uber<Obj>()('a', 'b', UL.minBy((o: {c: number}) => Math.abs(o.c)));
             expect(lensMax.get(obj)).toEqual({c: 0});
+
+            const newObj2 = lensMax.set(obj)({c: 1000});
+            expect(newObj2).toEqual({a: {b: [{c: 1000}, {c: 100}, {c: -200}]}});
         });
-    });
 
-    describe('set/mod', () => {
-        it('Does nothing if the path doesn\'t exists in the nested array', () => {
-            const obj = {a: {b: {c: ['hello']}}};
-            type Obj = typeof obj;
+        it('Gets an element in an extremely deep properties', () => {
+            let deepObject = { A: { B: { C: { D: { E: { F: { G: { H: { I: { J: 100 } } } } } } } } } };
 
-            const lens = UL.uber<Obj>()('a', 'b', 'c', 1);
-            const newObj = lens.set(obj)('world');
-            expect(newObj).toEqual(obj);
+            type DeepObject = typeof deepObject;
 
-            const newObj2 = lens.mod(x => x + '!')(obj);
-            expect(newObj2).toEqual(obj);
+            const testDeep = UL.uber<DeepObject>()('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J');
+
+            expect(testDeep.get(deepObject)).toEqual(100);
+
+            const newDeepObject = testDeep.set(deepObject)(200);
+            expect(newDeepObject).toEqual({ A: { B: { C: { D: { E: { F: { G: { H: { I: { J: 200 } } } } } } } } } });
+
+            const newDeepObject2 = testDeep.mod(x => x + 1)(deepObject);
+            expect(newDeepObject2).toEqual({ A: { B: { C: { D: { E: { F: { G: { H: { I: { J: 101 } } } } } } } } } });
         });
     });
 });
