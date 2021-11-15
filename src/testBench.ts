@@ -87,9 +87,9 @@ const pimPieceDeep = UL.uber<ProductInfoS>()(
     'hierarchies',
     0,
     'groups',
-    UL.matchOne({ group: 'product_info' }),
+    UL.indexOne({ group: 'product_info' }),
     'contents',
-    UL.matchAll(),
+    UL.indexAll,
     'children'
 )
 
@@ -181,11 +181,11 @@ const simplePimLens = UL.uber<ProductInfoS>()(
     'hierarchies',
     0,
     'groups',
-    UL.matchOne({ group: 'product_info' }),
+    UL.indexOne({ group: 'product_info' }),
     'contents',
-    UL.matchAll(),
+    UL.indexAll,
     'children',
-    UL.matchAll(),
+    UL.indexAll,
     { single: x => x.type === 'text' },
     'value',
     'multi',
@@ -200,10 +200,10 @@ type SimpleObject = typeof simpleObject;
 
 const pimPieceShallow2 = UL.uber<ProductInfoS>()(
     "contentTypeGroups",
-    UL.matchAll(),
+    UL.indexAll,
     "name",
     "multi",
-    UL.matchOne({ isoCode: "en" }),
+    UL.indexOne({ isoCode: "en" }),
     "value"
 ).mod(() => "Mimmo")(productInfoExample)
 
@@ -212,6 +212,6 @@ console.log(pimPieceShallow2);
 const pimPiece2 = UL.uber<Translatable<string>[]>()(
     0,
     'multi',
-    UL.matchOne({ isoCode: 'en' }),
+    UL.indexOne({ isoCode: 'en' }),
 )
 

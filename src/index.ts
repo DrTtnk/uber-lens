@@ -5,22 +5,33 @@ import * as tf from "type-fest"
 // istanbul ignore next
 const assertNever = (x: never): never => { throw new Error(`Unexpected object: ${x}`); };
 
-type Match<T> = (x: T) => boolean;
-type MatchAny<T> = { any: (x: T) => boolean };
-type MatchAll<T> = { all: (x: T) => boolean };
-type Index<T> = (x: T) => number;
+export const $any: unique symbol = Symbol("any");
+export const $all: unique symbol = Symbol("all");
 
-type Comparer<T>
+export const $many: unique symbol = Symbol("many");
+export const $single: unique symbol = Symbol("one");
+export const $fold: unique symbol = Symbol("fold");
+
+export type Match<T> = (x: T) => boolean;
+export type MatchAny<T> = { [$any]: Comparer<T> };
+export type MatchAll<T> = { [$all]: Comparer<T> };
+
+export const matchAny = <T>(matcher: Comparer<T>): MatchAny<T> => ({ [$any]: matcher } as const);
+export const matchAll = <T>(matcher: Comparer<T>): MatchAll<T> => ({ [$all]: matcher } as const);
+
+export type Comparer<T>
     = T
     | ((x: T) => boolean)
-    | (T extends object ? ({ [K in keyof T]: Match<T[K]> }) : never);
+    | (T extends object ? ({ [K in keyof T]: Comparer<T[K]> }) : never)
+    | (T extends (infer U)[] ? MatchAny<U> | MatchAll<U> : never)
 
 // Converts a comparer to an object, inferring the type of the function arguments
+
 type ComparerToObject<T>
     = T extends (x: infer A) => boolean ? A
+    : T extends MatchAll<infer U> | MatchAny<infer U> ? ComparerToObject<U>[]
     : T extends object ? { [K in keyof T]: ComparerToObject<T[K]> }
     : T;
-
 const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
     R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
@@ -29,38 +40,38 @@ const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
 
 export const comparePartial = <T extends Comparer<any>>(matcher: T) => <S extends ComparerToObject<T>>(obj: S): boolean => {
     // Case: matcher is a primitive
-    if (typeof matcher === "string" || typeof matcher === "number" || typeof matcher === "boolean") {
-        // @ts-ignore
-        return obj === matcher;
-    }
+    // @ts-ignore
+    if(["string", "number", "boolean"].includes(typeof matcher)) return obj === matcher;
+
     // Case: matcher is a symbol
-    if (typeof matcher === "symbol") {
-        // @ts-ignore
-        return obj.toString() === matcher.toString();
-    }
+    // @ts-ignore
+    if (typeof matcher === "symbol") return obj.toString() === matcher.toString();
+
     // Case: matcher is a Date
-    if (matcher instanceof Date) {
-        return obj instanceof Date && obj.getTime() === matcher.getTime();
-    }
+    if (matcher instanceof Date) return obj instanceof Date && obj.getTime() === matcher.getTime();
+
     // Case: matcher is an object
     if (typeof matcher === 'object'){
+        if((matcher as any)[$all])
+            return (obj as any[]).every(comparePartial((matcher as any)[$all]));
+        if((matcher as any)[$any])
+            return (obj as any[]).some(comparePartial((matcher as any)[$any]));
         // @ts-ignore
         return R.keys(matcher).every(key => obj[key] && comparePartial(matcher[key] as any)(obj[key]));
     }
+
     // Case: matcher is a function
-    if (typeof matcher === 'function') {
-        // @ts-ignore
-        return matcher(obj);
-    }
+    // @ts-ignore
+    if (typeof matcher === 'function') return matcher(obj);
 
     return false;
 };
 
-export const matchOne = <T extends Comparer<any>>(match: T) => ({ single: comparePartial<T>(match) })
+export type Index<T> = (x: T) => number;
 
-export const matchMany = <T extends Comparer<any>>(match: T) => ({ multi: comparePartial<T>(match) })
-
-export const matchAll = () => ({ multi: <T>(_: T) => true } as const)
+export const indexOne = <T extends Comparer<any>>(match: T) => ({ single: comparePartial<T>(match) })
+export const indexMany = <T extends Comparer<any>>(match: T) => ({ multi: comparePartial<T>(match) })
+export const indexAll = ({ multi: <T>(_: T) => true } as const)
 
 export const maxBy = <T>(extract: ((el: T) => number)) => ({ fold: indexMaxBy(extract) })
 export const minBy = <T>(extract: ((el: T) => number)) => ({ fold: indexMinBy(extract) })

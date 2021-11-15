@@ -1,11 +1,12 @@
 import * as UL from '../src/index';
+import {$all} from "../src/index";
 
 describe('Uber lens', () => {
 
     describe('matchers', () => {
 
         describe('matchers with logic', () => {
-            it('Returns true if the matcher function matches primitive types, false otherwise', () =>{
+            it('Match primitive types', () =>{
                 const matcher = (x: string) => x === 'a';
                 expect(UL.comparePartial(matcher)('a')).toBe(true);
                 expect(UL.comparePartial(matcher)('b')).toBe(false);
@@ -14,7 +15,7 @@ describe('Uber lens', () => {
                 expect(UL.comparePartial(matcher)(10)).toBeDefined();
             });
 
-            it('Returns true if the matcher function matches objects, false otherwise', () =>{
+            it('Match objects', () =>{
                 const matcher = (x: { a: string }) => x.a === 'a';
                 expect(UL.comparePartial(matcher)({ a: 'a' })).toBe(true);
                 expect(UL.comparePartial(matcher)({ a: 'b' })).toBe(false);
@@ -23,7 +24,7 @@ describe('Uber lens', () => {
                 expect(UL.comparePartial(matcher)({ a: 10 })).toBeDefined();
             });
 
-            it('Returns true if the matcher function matches with nested functions, false otherwise', () =>{
+            it('Match with nested functions', () =>{
                 const matcher = { b: (x: string) => x === 'c' };
                 expect(UL.comparePartial(matcher)({ b: 'b' })).toBe(false);
                 expect(UL.comparePartial(matcher)({ b: 'c' })).toBe(true);
@@ -35,7 +36,7 @@ describe('Uber lens', () => {
                 expect(UL.comparePartial(matcher)({ h: 10 })).toBeDefined();
             });
 
-            it('Returns true if the matcher function matches with nested objects and multiple conditions, false otherwise', () =>{
+            it('Match with nested objects and multiple conditions', () =>{
                 const matcher = {
                     b: {
                         c: (x: string) => x === 'c',
@@ -50,18 +51,37 @@ describe('Uber lens', () => {
                 expect(UL.comparePartial(matcher)({ b: { c: 'c', h: { e: 10, f: 'f', g: 'g' } } })).toBeDefined();
             });
 
-            it('Returns true if the matcher function matches with arrays, false otherwise', () =>{
-                const matcher = { b: (x: string[]) => x.length === 2 };
+            it('Match with arrays', () =>{
+                const matcherSimple = { b: { [$all]: (x: number) => x > 10 } };
+                const matcherSimpleUtil = { b: UL.matchAll((x: number) => x > 10) };
 
-                expect(UL.comparePartial(matcher)({ b: ['a', 'b'] })).toBe(true);
-                expect(UL.comparePartial(matcher)({ b: ['a', 'b', 'c'] })).toBe(false);
+                expect(UL.comparePartial(matcherSimple)({ b: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).toBe(false);
+                expect(UL.comparePartial(matcherSimpleUtil)({ b: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).toBe(false);
 
-                // @ts-expect-error
-                expect(UL.comparePartial(matcher)({ b: ['a', 10] })).toBeDefined();
+                expect(UL.comparePartial(matcherSimple)({ b: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] })).toBe(true);
+                expect(UL.comparePartial(matcherSimpleUtil)({ b: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] })).toBe(true);
+
+                const matcherNested = { b: { [$all]: { f: 'f' } } }
+                const matcherNestedUtils = { b: UL.matchAll({ f: 'f' }) }
+
+                expect(UL.comparePartial(matcherNested)({ b: [{ f: 'f', g: 10 }, { f: 'g', g: 101 }] })).toBe(false);
+                expect(UL.comparePartial(matcherNestedUtils)({ b: [{ f: 'f', g: 10 }, { f: 'f', g: 101 }] })).toBe(true);
+
+                const matcherNestedUtils2 = { b: UL.matchAll({ g: (x: number) => x > 10 }) }
+                expect(UL.comparePartial(matcherNestedUtils2)({ b: [{ f: 'f', g: 11 }, { f: 'f', g: 101 }] })).toBe(true);
+                expect(UL.comparePartial(matcherNestedUtils2)({ b: [{ f: 'f', g: 9 }, { f: 'f', g: 101 }] })).toBe(false);
+
+                const matcherNestedUtils3 = { b: UL.matchAll({ g: UL.matchAll((x: number) => x > 10) }) }
+                expect(UL.comparePartial(matcherNestedUtils3)({ b: [{ f: 'f', g: [11] }, { f: 'f', g: [101] }] })).toBe(true);
+                expect(UL.comparePartial(matcherNestedUtils3)({ b: [{ f: 'f', g: [9] }, { f: 'f', g: [101] }] })).toBe(false);
+
+                const matcherNestedUtilsAny = { b: UL.matchAny((x: number) => x > 10) }
+                expect(UL.comparePartial(matcherNestedUtilsAny)({ b: [7, 8, 9, 10, 11] })).toBe(true);
+                expect(UL.comparePartial(matcherNestedUtilsAny)({ b: [7, 8, 9, 10] })).toBe(false);
             });
         })
 
-        it('Returns true if the matcher object is equal to the expected object, false otherwise', () => {
+        it('object is equal to the expected object, false otherwise', () => {
             const expected = {a: 1, b: 2, c: 3};
 
             const validMatcher = {a: 1, b: 2, c: 3};
@@ -160,10 +180,10 @@ describe('Uber lens', () => {
             type Obj = typeof obj;
 
             // @ts-expect-error
-            const lensInvalid1 = UL.uber<Obj>()('a', 'b', 'c', UL.matchOne(['hello']));
+            const lensInvalid1 = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne(['hello']));
             // @ts-expect-error
-            const lensInvalid2 = UL.uber<Obj>()('a', 'b', 'c', UL.matchOne(2));
-            const lens = UL.uber<Obj>()('a', 'b', 'c', UL.matchOne('hello'));
+            const lensInvalid2 = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne(2));
+            const lens = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne('hello'));
             expect(lens.get(obj)).toBe('hello');
         });
 
@@ -172,8 +192,8 @@ describe('Uber lens', () => {
             type Obj = typeof obj;
 
             // @ts-expect-error
-            const lensInvalid = UL.uber<Obj>()('a', 'b', 'c', UL.matchOne({c: 'hello'}));
-            const lens = UL.uber<Obj>()('a', 'b', UL.matchOne({c: 'hello'}));
+            const lensInvalid = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne({c: 'hello'}));
+            const lens = UL.uber<Obj>()('a', 'b', UL.indexOne({c: 'hello'}));
             expect(lens.get(obj)).toEqual({c: 'hello'});
         });
 
@@ -181,7 +201,7 @@ describe('Uber lens', () => {
             const obj = {a: {b: {c: ['hello', 'world']}}};
             type Obj = typeof obj;
 
-            const lens = UL.uber<Obj>()('a', 'b', 'c', UL.matchMany('hello'));
+            const lens = UL.uber<Obj>()('a', 'b', 'c', UL.indexMany('hello'));
             expect(lens.get(obj)).toEqual(['hello']);
         });
 
@@ -189,7 +209,7 @@ describe('Uber lens', () => {
             const obj = {a: {b: [{c: 'hello'}, {c: 'world'}]}};
             type Obj = typeof obj;
 
-            const lens = UL.uber<Obj>()('a', 'b', UL.matchMany({c: 'hello'}));
+            const lens = UL.uber<Obj>()('a', 'b', UL.indexMany({c: 'hello'}));
             expect(lens.get(obj)).toEqual([{c: 'hello'}]);
         });
     });
