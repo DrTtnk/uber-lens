@@ -1,4 +1,4 @@
-import UL from "./";
+import * as UL from "./src";
 
 export type Translation<T> = { isoCode: string; value: T };
 

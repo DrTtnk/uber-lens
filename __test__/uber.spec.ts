@@ -1,4 +1,4 @@
-import UL from '../src/index';
+import * as UL from '../src/index';
 
 describe('Uber lens', () => {
 
