@@ -95,10 +95,10 @@ type MakeIndexer<Obj, Path extends L.List> = __P | Indexer<O.Path<Obj, L.Exclude
 
 type CleanPath<Path extends L.List> = L.Compulsory<IndexersToPath<L.Filter<Path, __P, '<-contains'>>>;
 
-type Value<Indexers extends any[], Obj extends object> = O.Path<Obj, CleanPath<Indexers>>;
-type GetterMulti<Indexers extends any[], Obj extends object> = U.Intersect<A.Keys<Indexers[number]>, "multi"> extends never
-    ? Value<Indexers, Obj>
-    : Value<Indexers, Obj>[];
+type Value<Obj extends object, Indexers extends any[]> = O.Path<Obj, CleanPath<Indexers>>;
+type GetterMulti<Obj extends object, Indexers extends any[]> = U.Intersect<A.Keys<Indexers[number]>, "multi"> extends never
+    ? Value<Obj, Indexers>
+    : Value<Obj, Indexers>[];
 
 export const uber = <Obj extends object>() => <
     K0  extends MakeIndexer<Obj, []>,
@@ -116,9 +116,9 @@ export const uber = <Obj extends object>() => <
     K12 extends MakeIndexer<Obj, [K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11]>,
     K13 extends MakeIndexer<Obj, [K0, K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11, K12]>,
 >(...indexers: [K0, K1?, K2?, K3?, K4?, K5?, K6?, K7?, K8?, K9?, K10?, K11?, K12?, K13?]) => ({
-    get: getterRecursive<Obj, GetterMulti<typeof indexers, Obj>>(...indexers as any),
-    set: setterRecursive<Obj, Value<typeof indexers, Obj>>(...indexers as any),
-    mod: modderRecursive<Obj, Value<typeof indexers, Obj>>(...indexers as any),
+    get: getterRecursive<Obj, GetterMulti<Obj, typeof indexers>>(...indexers as any),
+    set: setterRecursive<Obj, Value<Obj, typeof indexers>>(...indexers as any),
+    mod: modderRecursive<Obj, Value<Obj, typeof indexers>>(...indexers as any),
     indexers
 });
 
