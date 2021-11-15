@@ -1,5 +1,6 @@
 import {A, L, O, U, M} from "ts-toolbelt/out"
 import * as R from "rambda";
+import * as tf from "type-fest"
 
 // istanbul ignore next
 const assertNever = (x: never): never => { throw new Error(`Unexpected object: ${x}`); };
@@ -9,28 +10,55 @@ type MatchAny<T> = { any: (x: T) => boolean };
 type MatchAll<T> = { all: (x: T) => boolean };
 type Index<T> = (x: T) => number;
 
+type Comparer<T>
+    = T
+    | ((x: T) => boolean)
+    | (T extends object ? ({ [K in keyof T]: Match<T[K]> }) : never);
+
+// Converts a comparer to an object, inferring the type of the function arguments
+type ComparerToObject<T>
+    = T extends (x: infer A) => boolean ? A
+    : T extends object ? { [K in keyof T]: ComparerToObject<T[K]> }
+    : T;
+
 const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
     R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
 const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
     R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
-export type PartialMatch<T> = {
-    [P in keyof T]?: T[P] extends L.List<infer U> ? Match<U>
-                   : T[P] extends object          ? PartialMatch<T[P]> | Match<T[P]>
-                   : T[P] | Match<T[P]>;
+export const comparePartial = <T extends Comparer<any>>(matcher: T) => <S extends ComparerToObject<T>>(obj: S): boolean => {
+    // Case: matcher is a primitive
+    if (typeof matcher === "string" || typeof matcher === "number" || typeof matcher === "boolean") {
+        // @ts-ignore
+        return obj === matcher;
+    }
+    // Case: matcher is a symbol
+    if (typeof matcher === "symbol") {
+        // @ts-ignore
+        return obj.toString() === matcher.toString();
+    }
+    // Case: matcher is a Date
+    if (matcher instanceof Date) {
+        return obj instanceof Date && obj.getTime() === matcher.getTime();
+    }
+    // Case: matcher is an object
+    if (typeof matcher === 'object'){
+        // @ts-ignore
+        return R.keys(matcher).every(key => obj[key] && comparePartial(matcher[key] as any)(obj[key]));
+    }
+    // Case: matcher is a function
+    if (typeof matcher === 'function') {
+        // @ts-ignore
+        return matcher(obj);
+    }
+
+    return false;
 };
 
-const comparePartial = <T>(matcher: PartialMatch<T>) => <S extends T>(obj: S): boolean => {
-    // @ts-ignore
-    return typeof matcher === "function" ? matcher(obj)
-         : typeof matcher === "object"   ? R.keys(matcher).every(key => comparePartial(matcher[key] as any)(obj[key]))
-         : matcher === obj;
-};
+export const matchOne = <T extends Comparer<any>>(match: T) => ({ single: comparePartial<T>(match) })
 
-export const matchOne = <T>(match: PartialMatch<T>) => ({ single: comparePartial<T>(match) })
-
-export const matchMany = <T>(match: PartialMatch<T>) => ({ multi: comparePartial<T>(match) })
+export const matchMany = <T extends Comparer<any>>(match: T) => ({ multi: comparePartial<T>(match) })
 
 export const matchAll = () => ({ multi: <T>(_: T) => true } as const)
 

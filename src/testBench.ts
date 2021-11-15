@@ -192,11 +192,11 @@ const simplePimLens = UL.uber<ProductInfoS>()(
 );
 type SimpleObject = typeof simpleObject;
 
-const simpleObjectSet = UL.uber<SimpleObject>()(
-    "d",
-    UL.matchMany({ e: (e: number) => e > 50, f: '8' }),
-    "f"
-).mod(n => `Greater ${n}`)(simpleObject);
+// const simpleObjectSet = UL.uber<SimpleObject>()(
+//     "d",
+//     UL.matchMany({ e: (e: number) => e > 50, f: '8' }),
+//     "f"
+// ).mod(n => `Greater ${n}`)(simpleObject);
 
 const pimPieceShallow2 = UL.uber<ProductInfoS>()(
     "contentTypeGroups",
