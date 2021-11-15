@@ -1,5 +1,4 @@
-import * as UL from "./index";
-import * as R from "rambda";
+import UL from "./";
 
 export type Translation<T> = { isoCode: string; value: T };
 
