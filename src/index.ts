@@ -8,10 +8,6 @@ const assertNever = (x: never): never => { throw new Error(`Unexpected object: $
 export const $any: unique symbol = Symbol("any");
 export const $all: unique symbol = Symbol("all");
 
-export const $many: unique symbol = Symbol("many");
-export const $single: unique symbol = Symbol("one");
-export const $fold: unique symbol = Symbol("fold");
-
 export type Match<T> = (x: T) => boolean;
 export type MatchAny<T> = { [$any]: Comparer<T> };
 export type MatchAll<T> = { [$all]: Comparer<T> };
@@ -32,11 +28,6 @@ type ComparerToObject<T>
     : T extends MatchAll<infer U> | MatchAny<infer U> ? ComparerToObject<U>[]
     : T extends object ? { [K in keyof T]: ComparerToObject<T[K]> }
     : T;
-const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
-    R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
-
-const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
-    R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
 export const comparePartial = <T extends Comparer<any>>(matcher: T) => <S extends ComparerToObject<T>>(obj: S): boolean => {
     // Case: matcher is a primitive
@@ -44,30 +35,41 @@ export const comparePartial = <T extends Comparer<any>>(matcher: T) => <S extend
     if(["string", "number", "boolean"].includes(typeof matcher)) return obj === matcher;
 
     // Case: matcher is a symbol
-    // @ts-ignore
-    if (typeof matcher === "symbol") return obj.toString() === matcher.toString();
+    if (typeof matcher === "symbol" && typeof obj === "symbol") return obj.toString() === matcher.toString();
 
     // Case: matcher is a Date
     if (matcher instanceof Date) return obj instanceof Date && obj.getTime() === matcher.getTime();
-
-    // Case: matcher is an object
-    if (typeof matcher === 'object'){
-        if((matcher as any)[$all])
-            return (obj as any[]).every(comparePartial((matcher as any)[$all]));
-        if((matcher as any)[$any])
-            return (obj as any[]).some(comparePartial((matcher as any)[$any]));
-        // @ts-ignore
-        return R.keys(matcher).every(key => obj[key] && comparePartial(matcher[key] as any)(obj[key]));
-    }
 
     // Case: matcher is a function
     // @ts-ignore
     if (typeof matcher === 'function') return matcher(obj);
 
+    if (Array.isArray(matcher) && Array.isArray(obj)) return R.equals(matcher as any[], obj);
+
+    // Case: matcher is an object
+    if (typeof matcher === 'object'){
+        if((matcher as any)[$all] && Array.isArray(obj))
+            return obj.every(comparePartial((matcher as any)[$all]));
+        if((matcher as any)[$any] && Array.isArray(obj))
+            return obj.some(comparePartial((matcher as any)[$any]));
+        if (typeof obj === 'object' && !Array.isArray(obj))
+            return R.keys(matcher).every(key => (obj as any)[key] && comparePartial((matcher as any)[key])((obj as any)[key]));
+    }
+
     return false;
 };
 
+export const $many: unique symbol = Symbol("many");
+export const $single: unique symbol = Symbol("one");
+export const $fold: unique symbol = Symbol("fold");
+
 export type Index<T> = (x: T) => number;
+
+export const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
+    R.findIndex(R.equals(Math.max(...(arr.map(extract)))), arr.map(extract));
+
+export const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
+    R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
 export const indexOne = <T extends Comparer<any>>(match: T) => ({ single: comparePartial<T>(match) })
 export const indexMany = <T extends Comparer<any>>(match: T) => ({ multi: comparePartial<T>(match) })

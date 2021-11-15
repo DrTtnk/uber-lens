@@ -1,5 +1,4 @@
 import * as UL from '../src/index';
-import {$all} from "../src/index";
 
 describe('Uber lens', () => {
 
@@ -52,7 +51,7 @@ describe('Uber lens', () => {
             });
 
             it('Match with arrays', () =>{
-                const matcherSimple = { b: { [$all]: (x: number) => x > 10 } };
+                const matcherSimple = { b: { [UL.$all]: (x: number) => x > 10 } };
                 const matcherSimpleUtil = { b: UL.matchAll((x: number) => x > 10) };
 
                 expect(UL.comparePartial(matcherSimple)({ b: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).toBe(false);
@@ -61,7 +60,7 @@ describe('Uber lens', () => {
                 expect(UL.comparePartial(matcherSimple)({ b: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] })).toBe(true);
                 expect(UL.comparePartial(matcherSimpleUtil)({ b: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] })).toBe(true);
 
-                const matcherNested = { b: { [$all]: { f: 'f' } } }
+                const matcherNested = { b: { [UL.$all]: { f: 'f' } } }
                 const matcherNestedUtils = { b: UL.matchAll({ f: 'f' }) }
 
                 expect(UL.comparePartial(matcherNested)({ b: [{ f: 'f', g: 10 }, { f: 'g', g: 101 }] })).toBe(false);
@@ -125,7 +124,7 @@ describe('Uber lens', () => {
             expect(UL.comparePartial(false)(expectedBoolean)).toBe(false);
 
             const expectedArray = [1, 2, 3];
-            expect(UL.comparePartial([1, 2])(expectedArray)).toBe(true);
+            expect(UL.comparePartial([1, 2, 3])(expectedArray)).toBe(true);
             expect(UL.comparePartial([1, 2, 4])(expectedArray)).toBe(false);
 
             const expectedDate = new Date();
@@ -138,7 +137,7 @@ describe('Uber lens', () => {
         })
     })
 
-    describe('get', () => {
+    describe('get/set/mod', () => {
         it('Gets the value at the given path', () => {
             const obj = {a: {b: {c: 'hello'}}};
             type Obj = typeof obj;
@@ -148,6 +147,12 @@ describe('Uber lens', () => {
 
             const lens2 = UL.uber<Obj>()('a', 'b');
             expect(lens2.get(obj)).toEqual({c: 'hello'});
+
+            const newObj = lens.set(obj)('world');
+            expect(newObj).toEqual({a: {b: {c: 'world'}}});
+
+            const newObj2 = lens.mod(x => x + '!')(obj);
+            expect(newObj2).toEqual({a: {b: {c: 'hello!'}}});
         });
 
         it('Gets the value at the given path with nested arrays', () => {
@@ -156,6 +161,12 @@ describe('Uber lens', () => {
 
             const lens = UL.uber<Obj>()('a', 'b', 'c', 0);
             expect(lens.get(obj)).toBe('hello');
+
+            const newObj = lens.set(obj)('world');
+            expect(newObj).toEqual({a: {b: {c: ['world']}}});
+
+            const newObj2 = lens.mod(x => x + '!')(obj);
+            expect(newObj2).toEqual({a: {b: {c: ['hello!']}}});
         });
 
         it('Returns undefined if the path doesn\'t exists in the nested array', () => {
@@ -203,42 +214,47 @@ describe('Uber lens', () => {
 
             const lens = UL.uber<Obj>()('a', 'b', 'c', UL.indexMany('hello'));
             expect(lens.get(obj)).toEqual(['hello']);
+
         });
 
         it('Matches multiple elements in the path with nested arrays using the matchMany utils', () => {
-            const obj = {a: {b: [{c: 'hello'}, {c: 'world'}]}};
+            const obj = {a: {b: [{c: 'hello', d: 10}, {c: 'world', d: 20}, {c: 'hello', d: 200}]}};
             type Obj = typeof obj;
 
-            const lens = UL.uber<Obj>()('a', 'b', UL.indexMany({c: 'hello'}));
-            expect(lens.get(obj)).toEqual([{c: 'hello'}]);
+            const lens = UL.uber<Obj>()('a', 'b', UL.indexMany({d: (x: number) => x < 100}), 'c');
+            expect(lens.get(obj)).toEqual(['hello', 'world']);
+
+            const newObj = lens.set(obj)('world');
+            expect(newObj).toEqual({a: {b: [{c: 'world', d: 10}, {c: 'world', d: 20}, {c: 'hello', d: 200}]}});
+
+            const newObj2 = lens.mod(x => x + '!')(obj);
+            expect(newObj2).toEqual({a: {b: [{c: 'hello!', d: 10}, {c: 'world!', d: 20}, {c: 'hello', d: 200}]}});
+        });
+
+        it('Gets the element with the maximum/maximum value by prop', () => {
+            const obj = {a: {b: [{c: 0}, {c: 100}]}};
+            type Obj = typeof obj;
+
+            const lensMin = UL.uber<Obj>()('a', 'b', UL.maxByProp('c'));
+            expect(lensMin.get(obj)).toEqual({c: 100});
+
+            const lensMax = UL.uber<Obj>()('a', 'b', UL.minByProp('c'));
+            expect(lensMax.get(obj)).toEqual({c: 0});
+        });
+
+        it('Gets the element with the maximum/maximum value by extract function', () => {
+            const obj = {a: {b: [{c: 0}, {c: 100}, {c: -200}]}};
+            type Obj = typeof obj;
+
+            const lensMin = UL.uber<Obj>()('a', 'b', UL.maxBy((o: {c: number}) => Math.abs(o.c)));
+            expect(lensMin.get(obj)).toEqual({c: -200});
+
+            const lensMax = UL.uber<Obj>()('a', 'b', UL.minBy((o: {c: number}) => Math.abs(o.c)));
+            expect(lensMax.get(obj)).toEqual({c: 0});
         });
     });
 
     describe('set/mod', () => {
-        it('Sets the value at the given path', () => {
-            const obj = {a: {b: {c: 'hello'}}};
-            type Obj = typeof obj;
-
-            const lens = UL.uber<Obj>()('a', 'b', 'c');
-            const newObj = lens.set(obj)('world');
-            expect(newObj).toEqual({a: {b: {c: 'world'}}});
-
-            const newObj2 = lens.mod(x => x + '!')(obj);
-            expect(newObj2).toEqual({a: {b: {c: 'hello!'}}});
-        });
-
-        it('Sets the value at the given path with nested arrays', () => {
-            const obj = {a: {b: {c: ['hello']}}};
-            type Obj = typeof obj;
-
-            const lens = UL.uber<Obj>()('a', 'b', 'c', 0);
-            const newObj = lens.set(obj)('world');
-            expect(newObj).toEqual({a: {b: {c: ['world']}}});
-
-            const newObj2 = lens.mod(x => x + '!')(obj);
-            expect(newObj2).toEqual({a: {b: {c: ['hello!']}}});
-        });
-
         it('Does nothing if the path doesn\'t exists in the nested array', () => {
             const obj = {a: {b: {c: ['hello']}}};
             type Obj = typeof obj;
@@ -250,17 +266,5 @@ describe('Uber lens', () => {
             const newObj2 = lens.mod(x => x + '!')(obj);
             expect(newObj2).toEqual(obj);
         });
-
-        // it('Updates the value of nested arrays with the matchOne utils', () => {
-        //     const obj = {a: {b: [{c: 'hello'}, {c: 'world'}]}};
-        //     type Obj = typeof obj;
-        //
-        //     const lens = UL.uber<Obj>()('a', 'b', UL.matchOne({c: 'hello'}), 'c');
-        //     const newObj = lens.set(obj)('world');
-        //     expect(newObj).toEqual({a: {b: [{c: 'world'}, {c: 'world'}]}});
-        //
-        //     const newObj2 = lens.mod(x => x + '!')(obj);
-        //     expect(newObj2).toEqual({a: {b: [{c: 'hello!'}, {c: 'world!'}]}});
-        // });
     });
 });
