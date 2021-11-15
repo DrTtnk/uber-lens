@@ -67,8 +67,8 @@ export const indexMaxBy = <T>(extract: (el: T) => number) => (arr: T[]): number 
 export const indexMinBy = <T>(extract: (el: T) => number) => (arr: T[]): number =>
     R.findIndex(R.equals(Math.min(...(arr.map(extract)))), arr.map(extract));
 
-export const indexOne = <T extends Comparer<any>>(match: T) => ({ single: comparePartial<T>(match) })
-export const indexMany = <T extends Comparer<any>>(match: T) => ({ multi: comparePartial<T>(match) })
+export const indexOne = <T>(match: Comparer<T>) => ({ single: comparePartial<Comparer<T>>(match) })
+export const indexMany = <T>(match: Comparer<T>) => ({ multi: comparePartial<Comparer<T>>(match) })
 export const indexAll = ({ multi: <T>(_: T) => true } as const)
 
 export const maxBy = <T>(extract: ((el: T) => number)) => ({ fold: indexMaxBy(extract) })
@@ -76,7 +76,6 @@ export const minBy = <T>(extract: ((el: T) => number)) => ({ fold: indexMinBy(ex
 
 export const maxByProp = <K extends string, T extends Record<K, number>>(prop: K) => ({ fold: indexMaxBy<T>(R.prop(prop)) })
 export const minByProp = <K extends string, T extends Record<K, number>>(prop: K) => ({ fold: indexMinBy<T>(R.prop(prop)) })
-// endregion
 
 export type Matcher<El>
     = { single: Match<El> }

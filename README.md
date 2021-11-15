@@ -43,19 +43,15 @@ const store = {
 We want to update Über's comment to be all uppercase in the old way.
 ```typescript
 // Capitalize Über's comment
-store = {
+const newStore = {
     ...store,
     posts: store.posts.map(post => ({
         ...post,
-        comments: post.comments.map(comment => comment.user === 'Über')
-            ? {
-                ...comment,
-                text: comment.text.toUpperCase()
-            }
-            : comment
+        comments: post.comments.map(comment => comment.user === 'Über'
+            ? { ...comment, text: comment.text.toUpperCase() }
+            : comment)
     }))
 }
-
 ```
 
 I'm not even sure if this works, and I'm too scared to try it :D
@@ -67,10 +63,10 @@ import * as UL from 'uber-lens'
 
 type Store = typeof store
 
-const uberLens = UL.uber<Store>()('posts', 0, 'comments', UL.matchOne({name: 'Über'}), 'text');
+const uberLens = UL.uber<Store>()('posts', 0, 'comments', UL.indexOne({ user: 'Über' }), 'text');
 
 // Now we just have to update the store
-const newStore = uberLens.mod(store, t => t.toUpperCase())
+const newStore = uberLens.mod(t => t.toUpperCase())(store)
 ```
 
 See? It's that easy!
@@ -82,7 +78,7 @@ See? It's that easy!
 const uberComment = uberLens.get(store)
 
 // But we can also just set the value
-const newStore2 = uberLens.set(store, 'Über is the best')
+const newStore3 = uberLens.set(store)('Über is the best')
 ```
 
 I'll let you guess if this works as expected, but the tests and the EXTREMELY STRONG TYPE system are here to make sure 
@@ -100,12 +96,11 @@ complex updates.
 Do you want to set/update/get **all** Über comments to be all uppercase? You can do that with UBER LENS!
 ```typescript
 import * as UL from 'uber-lens'
-
 const uberCommentsLens = UL.uber<Store>()(
-    'posts', 
-    UL.matchAll, 
-    'comments', 
-    UL.matchMany({ name: 'Über' }), 
+    'posts',
+    UL.indexAll,
+    'comments',
+    UL.indexMany({ user: 'Über' }),
     'text'
 );
 ```
@@ -114,11 +109,11 @@ Do you want to set/update/get only the comments that have more than 10 likes? Do
 ```typescript
 import * as UL from 'uber-lens'
 
-const mostLikedCommetsLens = UL.uber<Store>()(
-    'posts', 
-    UL.matchAll, 
-    'comments', 
-    UL.indexMany({ likes: l => l > 10) }), // <- and the intellisense is here to help you
+const mostLikedCommentsLens = UL.uber<Store>()(
+    'posts',
+    UL.indexAll,
+    'comments',
+    UL.indexMany({ likes: (l: number) => l > 10 }),
     'text'
 );
 ```
@@ -128,8 +123,8 @@ Do you want the text of the post with the most comments? Done!
 import * as UL from 'uber-lens'
 
 const mostCommentsLens = UL.uber<Store>()(
-    'posts', 
-    UL.maxByProp(),
+    'posts',
+    UL.maxBy((c: {comments: any[]}) => c.comments.length),
 );
 ```
 ---
@@ -150,7 +145,7 @@ For instance:
 import * as UL from 'uber-lens'
 
 // if you try to update a string with a number, you'll get a compile error.
-const titleLens = UL.uber<Store>()('posts', 0, 'title').mod(store, t => t + 1); // Error!
+const titleLens = UL.uber<Store>()('posts', 0, 'title').mod(t => t - 1); // Error!
 
 // If you use the wrong path, you'll get a compile error.
 const uberLens2 = UL.uber<Store>()('posts', 0, 'titles'); // Error!
@@ -172,11 +167,11 @@ export function uber<Obj extends object>(): <P extends Indexer<Obj>[]>(...indexe
 
 ---
 
-### matchOne, matchMany, matchAll
+### indexOne, indexMany, indexAll
 ```typescript
-export function matchOne: <T>(match: PartialMatch<T>) => { single: <S extends T>(obj: S) => boolean };
-export function matchMany: <T>(match: PartialMatch<T>) => { multi: <S extends T>(obj: S) => boolean };
-export function matchAll: () => { multi: <T>(_: T) => boolean };
+export function indexOne: <T>(match: Comparer<T>) => { single: <S extends T>(obj: S) => boolean };
+export function indexMany: <T>(match: Comparer<T>) => { multi: <S extends T>(obj: S) => boolean };
+export function indexAll: () => { multi: <T>(_: T) => boolean };
 ```
 
 ---
