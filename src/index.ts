@@ -142,6 +142,7 @@ const getterRecursive =
         if('fold' in p)
             return get(__obj[p.fold(__obj)]);
 
+        // istanbul ignore next
         return assertNever(p);
     };
 
@@ -174,6 +175,7 @@ const modderRecursive =
             if('fold' in p)
                 return R.update(p.fold(__obj), mod(__obj[p.fold(__obj)]), __obj);
 
+            // istanbul ignore next
             return assertNever(p);
         };
 

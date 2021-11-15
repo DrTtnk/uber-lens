@@ -103,23 +103,6 @@ const pimPieceDeepR = UL.uber<ProductInfoS>()(
     'value',
 )
 
-let testDeepObject = { A: { B: { C: { D: { E: { F: { G: { H: { I: { J: 100 } } } } } } } } } };
-
-type TestDeepObject = typeof testDeepObject;
-
-const testDeep = UL.uber<TestDeepObject>()(
-    'A',
-    'B',
-    'C',
-    'D',
-    'E',
-    'F',
-    'G',
-    'H',
-    'I',
-    'J'
-);
-
 const deepArray = UL.uber<string[][][][][][]>()(
     { single: c => !!c.length },
     { single: c => !!c.length },
@@ -192,11 +175,11 @@ const simplePimLens = UL.uber<ProductInfoS>()(
 );
 type SimpleObject = typeof simpleObject;
 
-// const simpleObjectSet = UL.uber<SimpleObject>()(
-//     "d",
-//     UL.matchMany({ e: (e: number) => e > 50, f: '8' }),
-//     "f"
-// ).mod(n => `Greater ${n}`)(simpleObject);
+const simpleObjectSet = UL.uber<SimpleObject>()(
+    "d",
+    UL.indexOne({ e: (e: number) => e > 50, f: '8' }),
+    "f"
+).mod(n => `Greater ${n}`)(simpleObject);
 
 const pimPieceShallow2 = UL.uber<ProductInfoS>()(
     "contentTypeGroups",
