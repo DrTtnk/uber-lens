@@ -3,6 +3,8 @@
   "version": "0.2.0",
   "description": "Immutable data made easy",
   "main": "src/index.ts",
+  "repository": { "url": "https://github.com/DrTtnk/uber-lens" },
+  "homepage": "https://github.com/DrTtnk/uber-lens",
   "files": [
     "src"
   ],
