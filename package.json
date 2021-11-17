@@ -1,22 +1,29 @@
 {
   "name": "uber-lens",
-  "version": "0.1.3", "description": "",
+  "version": "0.1.3",
+  "description": "Immutable data made easy",
   "main": "src/index.ts",
   "files": ["src"],
   "dependencies": {
     "rambda": "^6.9.0",
     "ts-toolbelt": "^9.6.0"
   },
-  "bundledDependencies": [
-    "rambda",
-    "ts-toolbelt"
-  ],
+  "peerDependencies": {
+    "rambda": "^6.9.0",
+    "ts-toolbelt": "^9.6.0"
+  },
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "functional",
+    "immutable",
+    "lens",
+    "lenses",
+    "object accessor"
+  ],
   "author": "DrTtnk",
   "license": "ISC",
   "devDependencies": {
