@@ -1,5 +1,11 @@
 # UBER LENS
 
+---
+
+### <div style="text-align: center;">Immutable data made easy</div>
+
+---
+
 Have you ever wanted to see the whole picture of your data?
 
 Have you ever wanted to use only immutable data?
@@ -9,6 +15,24 @@ Have you ever wanted to do it in a way that is easy to understand?
 Have you ever wanted to do it in a way that is easy to use?
 
 Look no further, UBER LENS is here to help you.
+
+## Table of Contents
+
+ - [Installation](#installation)
+ - [What is UBER LENS?](#what-is-uber-lens)
+   - [Before Uber-lens](#the-old-way) 
+   - [After Uber-lens](#the-new-way)
+ - [Typing](#typing)
+ - [Api](#api)
+   - [uber](#uber)
+   - [indexOne, indexMany, indexAll](#indexone-indexmany-indexall)
+   - [maxBy, minBy, maxByProp, minByProp](#maxby-minby-maxbyprop-minbyprop)
+
+## Installation
+
+```shell
+npm i uber-lens
+```
 
 ## What is UBER LENS?
 
@@ -55,6 +79,8 @@ const newStore = {
 ```
 
 I'm not even sure if this works, and I'm too scared to try it :D
+
+## The new way
 
 Let's try it with UBER LENS!
 
