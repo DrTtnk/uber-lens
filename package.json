@@ -1,6 +1,6 @@
 {
   "name": "uber-lens",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Immutable data made easy",
   "main": "src/index.ts",
   "repository": {
