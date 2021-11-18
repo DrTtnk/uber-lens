@@ -148,7 +148,7 @@ describe('Uber lens', () => {
             const lens2 = UL.uber<Obj>()('a', 'b');
             expect(lens2.get(obj)).toEqual({c: 'hello'});
 
-            const newObj = lens.set(obj)('world');
+            const newObj = lens.set(obj, 'world');
             expect(newObj).toEqual({a: {b: {c: 'world'}}});
 
             const newObj2 = lens.mod(x => x + '!')(obj);
@@ -162,7 +162,7 @@ describe('Uber lens', () => {
             const lens = UL.uber<Obj>()('a', 'b', 'c', 0);
             expect(lens.get(obj)).toBe('hello');
 
-            const newObj = lens.set(obj)('world');
+            const newObj = lens.set(obj, 'world');
             expect(newObj).toEqual({a: {b: {c: ['world']}}});
 
             const newObj2 = lens.mod(x => x + '!')(obj);
@@ -176,7 +176,7 @@ describe('Uber lens', () => {
             const lens = UL.uber<Obj>()('a', 'b', 'c', 1);
             expect(lens.get(obj)).toBeUndefined();
 
-            const newObj = lens.set(obj)('world');
+            const newObj = lens.set(obj, 'world');
             expect(newObj).toEqual(obj);
 
             const newObj2 = lens.mod(x => x + '!')(obj);
@@ -203,7 +203,7 @@ describe('Uber lens', () => {
             const lens = UL.uber<Obj>()('a', 'b', 'c', UL.indexOne('hello'));
             expect(lens.get(obj)).toBe('hello');
 
-            const newObj = lens.set(obj)('world');
+            const newObj = lens.set(obj, 'world');
             expect(newObj).toEqual({a: {b: {c: ['world', 'hello', 'world']}}});
         });
 
@@ -216,7 +216,7 @@ describe('Uber lens', () => {
             const lens = UL.uber<Obj>()('a', 'b', UL.indexOne({c: 'hello'}));
             expect(lens.get(obj)).toEqual({c: 'hello'});
 
-            const newObj = lens.set(obj)({c: 'world'});
+            const newObj = lens.set(obj, {c: 'world'});
             expect(newObj).toEqual({a: {b: [{c: 'world'}]}});
         });
 
@@ -236,7 +236,7 @@ describe('Uber lens', () => {
             const lens = UL.uber<Obj>()('a', 'b', UL.indexMany({d: (x: number) => x < 100}), 'c');
             expect(lens.get(obj)).toEqual(['hello', 'world']);
 
-            const newObj = lens.set(obj)('world');
+            const newObj = lens.set(obj, 'world');
             expect(newObj).toEqual({a: {b: [{c: 'world', d: 10}, {c: 'world', d: 20}, {c: 'hello', d: 200}]}});
 
             const newObj2 = lens.mod(x => x + '!')(obj);
@@ -261,13 +261,13 @@ describe('Uber lens', () => {
             const lensMin = UL.uber<Obj>()('a', 'b', UL.maxBy((o: {c: number}) => Math.abs(o.c)));
             expect(lensMin.get(obj)).toEqual({c: -200});
 
-            const newObj = lensMin.set(obj)({c: -1000});
+            const newObj = lensMin.set(obj, {c: -1000});
             expect(newObj).toEqual({a: {b: [{c: 0}, {c: 100}, {c: -1000}]}});
 
             const lensMax = UL.uber<Obj>()('a', 'b', UL.minBy((o: {c: number}) => Math.abs(o.c)));
             expect(lensMax.get(obj)).toEqual({c: 0});
 
-            const newObj2 = lensMax.set(obj)({c: 1000});
+            const newObj2 = lensMax.set(obj, {c: 1000});
             expect(newObj2).toEqual({a: {b: [{c: 1000}, {c: 100}, {c: -200}]}});
         });
 
@@ -280,7 +280,7 @@ describe('Uber lens', () => {
 
             expect(testDeep.get(deepObject)).toEqual(100);
 
-            const newDeepObject = testDeep.set(deepObject)(200);
+            const newDeepObject = testDeep.set(deepObject, 200);
             expect(newDeepObject).toEqual({ A: { B: { C: { D: { E: { F: { G: { H: { I: { J: 200 } } } } } } } } } });
 
             const newDeepObject2 = testDeep.mod(x => x + 1)(deepObject);

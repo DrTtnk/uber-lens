@@ -38,7 +38,16 @@ npm i uber-lens
 
 It's a library that allows you to create declarative and strongly typed lenses for your data.
 
-## The old way
+### Motivations
+
+I love functional programming, and I love declarative programming, and I really likes the [shades](https://www.npmjs.com/package/shades) package.
+
+There is only one problem with then, it's type declarations are a [little verbose](https://github.com/jamesmcnamara/shades/blob/master/types/index.d.ts), to say the least, and with some missing cases.
+
+Uber-lens allows you to create declarative, lodash like and strongly typed lenses for your data with less than 200 lines of library code
+with all the benefits of powerful type declarations.
+
+### The old way
 
 This is a very basic nested data structure
 ```typescript
@@ -80,7 +89,7 @@ const newStore = {
 
 I'm not even sure if this works, and I'm too scared to try it :D
 
-## The new way
+### The new way
 
 Let's try it with UBER LENS!
 
@@ -104,7 +113,7 @@ See? It's that easy!
 const uberComment = uberLens.get(store)
 
 // But we can also just set the value
-const newStore3 = uberLens.set(store)('Über is the best')
+const newStore3 = uberLens.set(store, 'Über is the best')
 ```
 
 I'll let you guess if this works as expected, but the tests and the EXTREMELY STRONG TYPE system are here to make sure 
@@ -171,7 +180,7 @@ For instance:
 import * as UL from 'uber-lens'
 
 // if you try to update a string with a number, you'll get a compile error.
-const titleLens = UL.uber<Store>()('posts', 0, 'title').mod(t => t - 1); // Error!
+const titleUpdate = UL.uber<Store>()('posts', 0, 'title').mod(t => t - 1); // Error!
 
 // If you use the wrong path, you'll get a compile error.
 const uberLens2 = UL.uber<Store>()('posts', 0, 'titles'); // Error!
@@ -186,7 +195,7 @@ const uberLens2 = UL.uber<Store>()('posts', 0, 'titles'); // Error!
 // Not the real prototype, but it's the same
 export function uber<Obj extends object>(): <P extends Indexer<Obj>[]>(...indexers: P) => {
     get: (obj: Obj) => Get<P, Obj>;
-    set: (obj: Obj) => (value: Get<P, Obj>) => Obj;
+    set: (obj: Obj, value: Get<P, Obj>) => Obj;
     mod: (obj: Obj) => (update: (t: Get<P, Obj>) => Get<P, Obj>) => Obj;
 }
 ```

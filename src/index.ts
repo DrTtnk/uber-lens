@@ -154,8 +154,7 @@ const getterRecursive =
 
 const setterRecursive =
     <T, Value>(...indexers: (undefined | Indexer<any>)[]) =>
-    (obj: T) =>
-    (value: Value): T => modderRecursive<T, Value>(...indexers)(_ => value)(obj);
+    (obj: T, value: Value): T => modderRecursive<T, Value>(...indexers)(_ => value)(obj);
 
 const modderRecursive =
     <T, Value>(...indexers: (undefined | Indexer<any>)[]) =>

@@ -1,7 +1,7 @@
 {
   "name": "uber-lens",
   "version": "0.2.2",
-  "description": "Immutable data made easy",
+  "description": "Lodash-like typesafe object accessors and lenses",
   "main": "src/index.ts",
   "repository": {
     "url": "https://github.com/DrTtnk/uber-lens"
